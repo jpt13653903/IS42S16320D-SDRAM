@@ -80,7 +80,7 @@ assign {opnCS, opnRAS, opnCAS, opnWE} = Command;
 //------------------------------------------------------------------------------
 
 reg       Reset;
-reg [13:0]Count;
+reg [14:0]Count;
 reg [ 9:0]RefreshCount;
 reg [ 3:0]RefreshBacklog;
 reg [13:0]PrechargeCount;
@@ -150,7 +150,7 @@ always @(posedge ipClk) begin
 
     case(State)
       Powerup: begin
-        if(&Count) State <= Init; // > 100 us
+        if(&Count) State <= Init; // > 200 us
         Count <= Count + 1;
       end
       //------------------------------------------------------------------------
@@ -298,6 +298,8 @@ always @(posedge ipClk) begin
         Buffer_Write     <= ipWrite;
         Buffer_Read      <= ipRead;
 
+        Count <= 0;
+
         if(&RefreshBacklog || ~|PrechargeCount) begin
           opWaitRequest <= 1;
           Command       <= NOP;
@@ -331,13 +333,13 @@ always @(posedge ipClk) begin
 
       SetupWrite: begin
         PageAddress <= Buffer_Address[24:12];
-        opDQM <= 2'h3;
 
         case(Count[3:0])
           0: begin
             Command <= ACT;
             opA     <= Buffer_Address[24:12];
             opBA    <=  2'h0;
+            opDQM   <=  2'h3;
             enDQ    <=  1'd0;
             opDQ    <= 16'bX;
           end
@@ -346,6 +348,7 @@ always @(posedge ipClk) begin
             Command <= ACT;
             opA     <= Buffer_Address[24:12];
             opBA    <=  2'h1;
+            opDQM   <=  2'h3;
             enDQ    <=  1'd0;
             opDQ    <= 16'bX;
           end
@@ -354,6 +357,7 @@ always @(posedge ipClk) begin
             Command <= ACT;
             opA     <= Buffer_Address[24:12];
             opBA    <=  2'h2;
+            opDQM   <=  2'h3;
             enDQ    <=  1'd0;
             opDQ    <= 16'bX;
           end
@@ -362,6 +366,7 @@ always @(posedge ipClk) begin
             Command <= ACT;
             opA     <= Buffer_Address[24:12];
             opBA    <=  2'h3;
+            opDQM   <=  2'h3;
             enDQ    <=  1'd0;
             opDQ    <= 16'bX;
           end
@@ -371,6 +376,7 @@ always @(posedge ipClk) begin
             Command <= WRITE;
             opBA    <= Buffer_Address[11:10];
             opA     <= {3'd0, Buffer_Address[9:0]};
+            opDQM   <= 2'h0;
             enDQ    <= 1'd1;
             opDQ    <= Buffer_WriteData;
             State   <= Writing;
@@ -380,6 +386,7 @@ always @(posedge ipClk) begin
             Command <= NOP;
             opA     <= 13'hx;
             opBA    <=  2'hx;
+            opDQM   <=  2'h3;
             enDQ    <=  1'd0;
             opDQ    <= 16'bX;
           end
@@ -394,6 +401,8 @@ always @(posedge ipClk) begin
         Buffer_Write     <= ipWrite;
         Buffer_Read      <= ipRead;
 
+        Count <= 0;
+
         if(&RefreshBacklog || ~|PrechargeCount) begin
           opWaitRequest <= 1;
           Command       <= NOP;
@@ -404,7 +413,7 @@ always @(posedge ipClk) begin
             Command <= WRITE;
             opBA    <= ipAddress[11:10];
             opA     <= {3'd0, ipAddress[9:0]};
-            opDQM   <=  2'h3;
+            opDQM   <=  2'h0;
             enDQ    <=  1'd1;
             opDQ    <= ipWriteData;
 
@@ -426,17 +435,35 @@ always @(posedge ipClk) begin
       //------------------------------------------------------------------------
 
       Precharge: begin
+        opDQM <=  2'h3;
+        enDQ  <=  1'd0;
+        opDQ  <= 16'bX;
+
         if(|ReadCommands) begin
           Command <= NOP;
 
         end else begin
-          Command <= PRE;
-          opA     <= 13'bx_x1xx_xxxx_xxxx;
-          opBA    <=  2'h3;
-          opDQM   <=  2'h3;
-          enDQ    <=  1'd0;
-          opDQ    <= 16'bX;
-          State   <= Idle;
+          case(Count[1:0])
+            1: begin
+              Command <= PRE;
+              opA     <= 13'bx_x1xx_xxxx_xxxx;
+              opBA    <=  2'h3;
+            end
+
+            2: begin
+              Command <= NOP;
+              opBA    <=  2'hx;
+              opA     <= 13'hx;
+              State   <= Idle;
+            end
+
+            default: begin
+              Command <= NOP;
+              opBA    <=  2'hx;
+              opA     <= 13'hx;
+            end
+          endcase
+          Count <= Count + 1;
         end
       end
       //------------------------------------------------------------------------
