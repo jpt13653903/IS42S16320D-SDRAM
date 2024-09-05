@@ -6,7 +6,12 @@ NOTE:
 - The clock going to the SDRAM device must lead ipCLK by 90 degrees
 - The timing constraints and capacitive loading must be set as follows:
 
-  -
+  - Output delay from -0.9 to 1.6 ns (opCKE, bpDQ*, etc.)
+  - Input delay from 3.0 to 5.9 ns (bpDQ*)
+  - Set up a multi-cycle requirement on the input path
+  - Set the output ports to 3.8 pF (op*)
+  - Set the bidirectional ports to 6.0 pF (bp*)
+  - Set the clock port to 3.5 pF (External to this module)
 ------------------------------------------------------------------------------*/
 
 module IS42S16320D(
