@@ -20,6 +20,7 @@ module IS42S16320D(
 
   // Avalon Interface
   input      [24:0]ipAddress,
+  input      [ 1:0]ipByteEnable = 2'b11,
   output reg       opWaitRequest,
 
   input      [15:0]ipWriteData,
@@ -49,6 +50,7 @@ assign bpDQ = enDQ ? opDQ : 16'hZ;
 //------------------------------------------------------------------------------
 
 reg [24:0]Buffer_Address;
+reg [ 1:0]Buffer_ByteEnable;
 reg [15:0]Buffer_WriteData;
 reg       Buffer_Write;
 reg       Buffer_Read;
@@ -107,10 +109,11 @@ always @(posedge ipClk) begin
     opReadData      <= 16'hx;
     opReadDataValid <=  1'b0;
 
-    Buffer_Address   <= 13'hX;
-    Buffer_WriteData <= 16'hX;
-    Buffer_Write     <=  1'b0;
-    Buffer_Read      <=  1'b0;
+    Buffer_Address    <= 13'hX;
+    Buffer_ByteEnable <=  2'hX;
+    Buffer_WriteData  <= 16'hX;
+    Buffer_Write      <=  1'b0;
+    Buffer_Read       <=  1'b0;
 
     Command <= NOP;
     opBA    <=  2'hx;
@@ -203,10 +206,11 @@ always @(posedge ipClk) begin
 
       Idle: begin
         if(~opWaitRequest) begin
-          Buffer_Address   <= ipAddress;
-          Buffer_WriteData <= ipWriteData;
-          Buffer_Write     <= ipWrite;
-          Buffer_Read      <= ipRead;
+          Buffer_Address    <= ipAddress;
+          Buffer_ByteEnable <= ipByteEnable;
+          Buffer_WriteData  <= ipWriteData;
+          Buffer_Write      <= ipWrite;
+          Buffer_Read       <= ipRead;
         end
 
         Count <= 0;
@@ -293,10 +297,11 @@ always @(posedge ipClk) begin
       //------------------------------------------------------------------------
 
       Reading: begin
-        Buffer_Address   <= ipAddress;
-        Buffer_WriteData <= ipWriteData;
-        Buffer_Write     <= ipWrite;
-        Buffer_Read      <= ipRead;
+        Buffer_Address    <= ipAddress;
+        Buffer_ByteEnable <= ipByteEnable;
+        Buffer_WriteData  <= ipWriteData;
+        Buffer_Write      <= ipWrite;
+        Buffer_Read       <= ipRead;
 
         Count <= 0;
 
@@ -376,7 +381,7 @@ always @(posedge ipClk) begin
             Command <= WRITE;
             opBA    <= Buffer_Address[11:10];
             opA     <= {3'd0, Buffer_Address[9:0]};
-            opDQM   <= 2'h0;
+            opDQM   <= ~Buffer_ByteEnable;
             enDQ    <= 1'd1;
             opDQ    <= Buffer_WriteData;
             State   <= Writing;
@@ -396,10 +401,11 @@ always @(posedge ipClk) begin
       //------------------------------------------------------------------------
 
       Writing: begin
-        Buffer_Address   <= ipAddress;
-        Buffer_WriteData <= ipWriteData;
-        Buffer_Write     <= ipWrite;
-        Buffer_Read      <= ipRead;
+        Buffer_Address    <= ipAddress;
+        Buffer_ByteEnable <= ipByteEnable;
+        Buffer_WriteData  <= ipWriteData;
+        Buffer_Write      <= ipWrite;
+        Buffer_Read       <= ipRead;
 
         Count <= 0;
 
@@ -413,7 +419,7 @@ always @(posedge ipClk) begin
             Command <= WRITE;
             opBA    <= ipAddress[11:10];
             opA     <= {3'd0, ipAddress[9:0]};
-            opDQM   <=  2'h0;
+            opDQM   <= ~ipByteEnable;
             enDQ    <=  1'd1;
             opDQ    <= ipWriteData;
 
