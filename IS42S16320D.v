@@ -441,7 +441,6 @@ always @(posedge ipClk) begin
       //------------------------------------------------------------------------
 
       Precharge: begin
-        opDQM <=  2'h3;
         enDQ  <=  1'd0;
         opDQ  <= 16'bX;
 
@@ -449,6 +448,8 @@ always @(posedge ipClk) begin
           Command <= NOP;
 
         end else begin
+          opDQM <= 2'h3;
+
           case(Count[1:0])
             1: begin
               Command <= PRE;
