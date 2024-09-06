@@ -20,7 +20,7 @@ module IS42S16320D(
 
   // Avalon Interface
   input      [24:0]ipAddress,
-  input      [ 1:0]ipByteEnable = 2'b11,
+  input      [ 1:0]ipByteEnable,
   output reg       opWaitRequest,
 
   input      [15:0]ipWriteData,
